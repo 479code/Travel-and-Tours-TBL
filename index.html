@@ -1115,8 +1115,7 @@ function updateAvatarDisplay(){
 
 /* ============================== GOOGLE SHEETS API ============================== */
 async function sheetsAPI(action, payload={}){
-  // Use google.script.run when served from Apps Script
-  // Use fetch when running as standalone HTML file
+  // Use google.script.run when served directly from Apps Script
   const isAppsScript = typeof google !== 'undefined' && google.script;
   if (isAppsScript) {
     return new Promise((resolve, reject) => {
@@ -1129,14 +1128,11 @@ async function sheetsAPI(action, payload={}){
         .handleRequest(JSON.stringify({ action, ...payload }));
     });
   }
-  // Fallback: fetch (for standalone HTML file usage)
+  // Use GET with encoded payload — works from GitHub Pages (no CORS issue)
   if (!APPS_SCRIPT_URL) throw new Error('Apps Script URL not configured.');
   const body = JSON.stringify({ action, ...payload });
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body
-  });
+  const url = APPS_SCRIPT_URL + '?payload=' + encodeURIComponent(body);
+  const res = await fetch(url, { method: 'GET', redirect: 'follow' });
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch(e) { throw new Error('Invalid response: ' + text.slice(0,200)); }
