@@ -1142,15 +1142,12 @@ async function sheetsAPI(action, payload={}){
 
 /* ============================== PERSISTENCE ============================== */
 async function loadDB(){
+  // Always clear stale cache — always load fresh from Sheets
+  try{ localStorage.removeItem('transborder_db_v5'); }catch(e){}
   // Check if Apps Script URL is configured
   if (!APPS_SCRIPT_URL){
-    // Try to load from localStorage as fallback / offline mode
-    try{
-      const saved = localStorage.getItem('transborder_db_v5');
-      if (saved){ DB = JSON.parse(saved); autoFlagTickets(); showToast('Loaded from local cache (offline mode)'); return; }
-    }catch(e){}
     await seedDemoData();
-    showToast('⚠ Apps Script URL not set — using demo data. See setup instructions.');
+    showToast('⚠ Apps Script URL not set — using demo data.');
     return;
   }
   showToast('Loading data…');
