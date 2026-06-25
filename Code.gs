@@ -20,9 +20,30 @@ var SHEETS = {
 };
 
 // ============================================================
-// SERVE THE APP
+// SERVE THE APP — doGet handles BOTH serving the HTML and
+// API calls (via ?payload=... query param) so CORS is never
+// an issue — GitHub Pages uses fetch GET with the payload.
 // ============================================================
 function doGet(e) {
+  // If a payload param is present this is an API call, not a page load
+  if (e && e.parameter && e.parameter.payload) {
+    var result;
+    try {
+      var payload = JSON.parse(decodeURIComponent(e.parameter.payload));
+      var action = payload.action;
+      if      (action === 'loadAll')    result = loadAll();
+      else if (action === 'saveAll')    result = saveAll(payload.db);
+      else if (action === 'uploadFile') result = uploadFile(payload.fileName, payload.mimeType, payload.base64Data);
+      else result = { error: 'Unknown action: ' + action };
+    } catch(err) {
+      result = { error: err.toString() };
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Otherwise serve the HTML app
   return HtmlService
     .createHtmlOutputFromFile('index')
     .setTitle('Transborder Logistics — Ticketing & Invoicing')
@@ -30,7 +51,7 @@ function doGet(e) {
 }
 
 // ============================================================
-// HANDLE DATA REQUESTS
+// HANDLE DATA REQUESTS via POST (used when served via Apps Script URL)
 // ============================================================
 function doPost(e) {
   var result;
